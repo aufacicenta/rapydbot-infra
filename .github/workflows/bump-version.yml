@@ -1,0 +1,21 @@
+name: Bump Version
+on: 
+  push:
+    branches:
+      - master
+    paths:
+      - '!.github/workflows/bump-version.yml'
+jobs:
+  Bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      # Bump Version
+      - name: Conventional Changelog Action
+        uses: TriPSs/conventional-changelog-action@v3
+        with:
+          github-token: ${{ secrets.github_token }}
+          skip-version-file: 'true' # ./package.json
+          skip-on-empty: 'false'
