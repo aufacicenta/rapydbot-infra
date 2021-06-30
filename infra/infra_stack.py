@@ -56,20 +56,24 @@ class InfraStack(cdk.Stack):
                                     resources=[p_secret_arn]))
 
         # CSI Chart
-        cluster.add_helm_chart("csi-secrets-store",
-            release="csi-secrets-store",
-            chart="secrets-store-csi-driver",
-            values={
-                "syncSecret.enabled": True
-            },
-            repository="https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/master/charts",
-            namespace="kube-system"
-        )
+        csi_chart = cluster.add_helm_chart("csi-secrets-store",
+                                            release="csi-secrets-store",
+                                            chart="secrets-store-csi-driver",
+                                            values={
+                                                "syncSecret.enabled": True
+                                            },
+                                            repository="https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/master/charts",
+                                            namespace="kube-system")
 
         # Installing the AWS Provider
         manifest = yaml.safe_load_all(requests.get("https://raw.githubusercontent.com/aws/secrets-store-csi-driver-provider-aws/main/deployment/aws-provider-installer.yaml").text)
         for i, doc in enumerate(manifest):
-            cluster.add_manifest("ascpResource" + str(i), doc)
+            resource = cluster.add_manifest("ascpResource" + str(i), doc)
+            resource.node.add_dependency(csi_chart)
+            resource.node.add_dependency(sa)
+
+            if doc['kind'] == "DaemonSet":
+                aws_csi = resource
         
         ####################
         # MYSQL Cluster
@@ -134,6 +138,7 @@ class InfraStack(cdk.Stack):
 
         # Create Resorce
         secret_r = cluster.add_manifest('customSecretR', manifest)
+        secret_r.node.add_dependency(aws_csi)
 
         ############################
         # Create Wallet Microservice
@@ -145,9 +150,11 @@ class InfraStack(cdk.Stack):
         # Create Resorces
         for i, doc in enumerate(manifest):
             resource = cluster.add_manifest('wallet' + doc['kind'] + 'R', doc)
-            if doc['kind'] == "Deployment":
-                resource.node.add_dependency(db_record)
-                resource.node.add_dependency(secret_r)
+            resource.node.add_dependency(db_record)
+            resource.node.add_dependency(secret_r)
+
+            if doc['kind'] == "Service":
+                wallet_service = resource
         
         ##########################
         # Create User Microservice
@@ -159,9 +166,11 @@ class InfraStack(cdk.Stack):
         # Create Resorces
         for i, doc in enumerate(manifest):
             resource = cluster.add_manifest('user' + doc['kind'] + 'R', doc)
-            if doc['kind'] == "Deployment":
-                resource.node.add_dependency(db_record)
-                resource.node.add_dependency(secret_r)
+            resource.node.add_dependency(db_record)
+            resource.node.add_dependency(secret_r)
+
+            if doc['kind'] == "Service":
+                user_service = resource
 
         ##########################
         # Create Bot Microservice
@@ -174,5 +183,5 @@ class InfraStack(cdk.Stack):
         for i, doc in enumerate(manifest):
             resource = cluster.add_manifest('bot' + doc['kind'] + 'R', doc)
             if doc['kind'] == "Deployment":
-                resource.node.add_dependency(db_record)
-                resource.node.add_dependency(secret_r)
+                resource.node.add_dependency(wallet_service)
+                resource.node.add_dependency(user_service)
