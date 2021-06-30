@@ -3,9 +3,9 @@ on:
   push:
     branches:
       - master
-    paths:
-        - '!package.json'
-        - '!CHANGELOG.md'
+    paths-ignore:
+      - 'package.json'
+      - 'CHANGELOG.md'
 jobs:
   Bump:
     runs-on: ubuntu-latest
