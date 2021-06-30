@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - master
+    paths:
+        - '!package.json'
+        - '!CHANGELOG.md'
 jobs:
   Bump:
     runs-on: ubuntu-latest
@@ -14,6 +17,6 @@ jobs:
       - name: Conventional Changelog Action
         uses: TriPSs/conventional-changelog-action@v3
         with:
-          github-token: ${{ secrets.github_token }}
+          github-token: ${{ secrets.TOKEN_ACTION }}
           skip-version-file: 'true' # ./package.json
           skip-on-empty: 'false'
