@@ -1,16 +1,13 @@
 from aws_cdk import core as cdk
 from aws_cdk import core
-from aws_cdk import aws_s3 as s3
-import aws_cdk.aws_ec2 as ec2 #pip install aws-cdk.aws-ec2
-import aws_cdk.aws_eks as eks #pip install aws-cdk.aws-eks
-import aws_cdk.aws_iam as iam #pip install aws-cdk.aws-iam
-import aws_cdk.aws_rds as rds #pip install aws-cdk.aws-rds
-import aws_cdk.aws_secretsmanager as sm #pip install aws-cdk.aws_secretsmanager
-import aws_cdk.aws_route53 as route53 #pip install aws-cdk.aws_route53
+import aws_cdk.aws_ec2 as ec2 
+import aws_cdk.aws_eks as eks
+import aws_cdk.aws_iam as iam
+import aws_cdk.aws_rds as rds
+import aws_cdk.aws_secretsmanager as sm
+import aws_cdk.aws_route53 as route53 
 
-import yaml #pip install pyyaml
-import requests #pip install requests
-import os
+import yaml, requests, os
 
 class InfraStack(cdk.Stack):
 
