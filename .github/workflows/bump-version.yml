@@ -3,8 +3,6 @@ on:
   push:
     branches:
       - master
-    paths:
-      - '!.github/workflows/bump-version.yml'
 jobs:
   Bump:
     runs-on: ubuntu-latest
