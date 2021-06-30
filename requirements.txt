@@ -1,1 +1,9 @@
--e .
+#-e .
+aws_cdk.aws_ec2~=1.110.0
+aws_cdk.aws_eks~=1.110.0
+aws_cdk.aws_iam~=1.110.0
+aws_cdk.aws_rds~=1.110.0 
+aws_cdk.aws_secretsmanager~=1.110.0 
+aws_cdk.aws_route53~=1.110.0
+pyyaml~=5.4.1
+requests~=2.25.1
