@@ -1,3 +1,7 @@
+## [0.2.1](https://github.com/aufacicenta/rapydbot-infra/compare/v0.2.0...v0.2.1) (2021-07-01)
+
+
+
 # [0.2.0](https://github.com/aufacicenta/rapydbot-infra/compare/v0.1.0...v0.2.0) (2021-06-30)
 
 
