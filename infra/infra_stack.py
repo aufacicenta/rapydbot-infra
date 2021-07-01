@@ -182,6 +182,25 @@ class InfraStack(cdk.Stack):
         # Create Resorces
         for i, doc in enumerate(manifest):
             resource = cluster.add_manifest('bot' + doc['kind'] + 'R', doc)
-            if doc['kind'] == "Deployment":
-                resource.node.add_dependency(wallet_service)
-                resource.node.add_dependency(user_service)
+            resource.node.add_dependency(wallet_service)
+            resource.node.add_dependency(user_service)
+
+            if doc['kind'] == "Service":
+                bot_service = resource
+
+        ###############################
+        # OutPuts
+        ###############################
+
+        bot_service_address = eks.KubernetesObjectValue(self, "botServiceLB",
+                                                        cluster=cluster,
+                                                        object_type="service",
+                                                        object_name="bot-service",
+                                                        json_path=".status.loadBalancer.ingress[0].hostname")
+
+        bot_service_address.node.add_dependency(bot_service)
+
+        core.CfnOutput(
+            self, "BOT_SERVICE_ENDPOINT",
+            value=bot_service_address.value)
+        
