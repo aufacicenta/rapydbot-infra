@@ -22,3 +22,10 @@ jobs:
           github-token: ${{ secrets.github_token }}
           skip-version-file: 'true' # ./package.json
           skip-on-empty: 'false'
+
+      # Print Version
+      - name: Print Version
+        run: |
+          VERSION=$(git tag --sort=-v:refname --list "v[0-9]*" | head -n 1 | cut -c 2-)
+          echo $VERSION
+          
