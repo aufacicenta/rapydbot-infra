@@ -24,7 +24,7 @@ spec:
               secretProviderClass: "aws-rapyd-secret"
       containers:
       - name: user
-        image: 111975705704.dkr.ecr.us-east-2.amazonaws.com/rapydbot/user:latest
+        image: rapydbot/user:latest
         ports:
         - containerPort: 30041
         volumeMounts:
