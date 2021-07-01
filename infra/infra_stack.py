@@ -18,10 +18,14 @@ class InfraStack(cdk.Stack):
         # Load ENV VARS
         ####################
         
-        p_secret_arn = os.getenv("SECRET_ARN", "")
+        p_secret_arn = os.getenv("RAPYDBOT_SECRET_ARN", "")
+        p_cert_arn = os.getenv("RAPYDBOT_CERT_ARN", "")
+        p_wallet_image = os.getenv("RAPYDBOT_WALLER_IMAGE", "")
+        p_user_image = os.getenv("RAPYDBOT_USER_IMAGE", "")
+        p_bot_image = os.getenv("RAPYDBOT_BOT_IMAGE", "")
 
-        if p_secret_arn == "":
-            print("SECRET_ARN env var is required!")
+        if p_secret_arn == '' or p_cert_arn == '' or p_wallet_image == '' or p_user_image == '' or p_bot_image == '':
+            print("RAPYDBOT_SECRET_ARN, RAPYDBOT_CERT_ARN, RAPYDBOT_WALLER_IMAGE, RAPYDBOT_USER_IMAGE, RAPYDBOT_BOT_IMAGE env vars are required!")
             os._exit(1)
 
         ####################
@@ -149,6 +153,10 @@ class InfraStack(cdk.Stack):
 
         # Create Resorces
         for i, doc in enumerate(manifest):
+            # Update container image
+            if doc['kind'] == "Deployment":
+                doc['spec']['template']['spec']['containers'][0]['image'] = p_wallet_image
+
             resource = cluster.add_manifest('wallet' + doc['kind'] + 'R', doc)
             resource.node.add_dependency(db_record)
             resource.node.add_dependency(secret_r)
@@ -165,6 +173,10 @@ class InfraStack(cdk.Stack):
 
         # Create Resorces
         for i, doc in enumerate(manifest):
+            # Update container image
+            if doc['kind'] == "Deployment":
+                doc['spec']['template']['spec']['containers'][0]['image'] = p_user_image
+
             resource = cluster.add_manifest('user' + doc['kind'] + 'R', doc)
             resource.node.add_dependency(db_record)
             resource.node.add_dependency(secret_r)
@@ -181,6 +193,14 @@ class InfraStack(cdk.Stack):
 
         # Create Resorces
         for i, doc in enumerate(manifest):
+            # Update container image
+            if doc['kind'] == "Deployment":
+                doc['spec']['template']['spec']['containers'][0]['image'] = p_bot_image
+
+            # Update Service
+            if doc['kind'] == "Service":
+                doc['metadata']['annotations']['service.beta.kubernetes.io/aws-load-balancer-ssl-cert'] = p_cert_arn
+
             resource = cluster.add_manifest('bot' + doc['kind'] + 'R', doc)
             resource.node.add_dependency(wallet_service)
             resource.node.add_dependency(user_service)

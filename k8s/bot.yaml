@@ -24,7 +24,7 @@ spec:
               secretProviderClass: "aws-rapyd-secret"
       containers:
       - name: bot
-        image: 111975705704.dkr.ecr.us-east-2.amazonaws.com/rapydbot/bot:latest
+        image: rapydbot/bot:latest
         volumeMounts:
         - name: rapyd-secret
           mountPath: "/mnt/secrets-store"
@@ -38,7 +38,7 @@ metadata:
     # Note that the backend talks over HTTP.
     service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
     # TODO: Fill in with the ARN of your certificate.
-    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-2:111975705704:certificate/ab7b74a8-9ce2-4d82-931a-b80be1a7468e
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: acm_cert_arn
     # Only run SSL on the port named "https" below.
     service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
 spec:
