@@ -7,7 +7,7 @@ import aws_cdk.aws_rds as rds
 import aws_cdk.aws_secretsmanager as sm
 import aws_cdk.aws_route53 as route53 
 
-import yaml, requests, os
+import yaml, requests, os, sys
 
 class InfraStack(cdk.Stack):
 
@@ -18,14 +18,16 @@ class InfraStack(cdk.Stack):
         # Load ENV VARS
         ####################
         
-        p_secret_arn = os.getenv("RAPYDBOT_SECRET_ARN", "")
-        p_cert_arn = os.getenv("RAPYDBOT_CERT_ARN", "")
-        p_wallet_image = os.getenv("RAPYDBOT_WALLER_IMAGE", "")
-        p_user_image = os.getenv("RAPYDBOT_USER_IMAGE", "")
-        p_bot_image = os.getenv("RAPYDBOT_BOT_IMAGE", "")
+        try:
+            document = open('values.yaml', 'r')
+            parms = yaml.safe_load_all(document).__next__()
+        except:
+            print("Parameter file is required! Error:", sys.exc_info()[0])
+            os._exit(1)
 
-        if p_secret_arn == '' or p_cert_arn == '' or p_wallet_image == '' or p_user_image == '' or p_bot_image == '':
-            print("RAPYDBOT_SECRET_ARN, RAPYDBOT_CERT_ARN, RAPYDBOT_WALLER_IMAGE, RAPYDBOT_USER_IMAGE, RAPYDBOT_BOT_IMAGE env vars are required!")
+        p_secret_arn = parms.get('secretsManager').get('arn')
+        if p_secret_arn == None:
+            print("Secrets ARN is required in parameter file! Error:", sys.exc_info()[0])
             os._exit(1)
 
         ####################
@@ -129,98 +131,16 @@ class InfraStack(cdk.Stack):
         ####################
         # Deploy APP
         ####################
+
+        if parms.get('secretsManager').get('secretName') == None:
+            parms['secretsManager']['secretName'] = secret_rapyd.secret_name
+
+        app_chart = cluster.add_helm_chart("rapydbot-chart",
+                                            release="my-bot",
+                                            chart="rapydbot",
+                                            values=parms,
+                                            repository="https://aufacicenta.github.io/rapydbot-chart/",
+                                            version=None if parms.get('charVersion') == None else parms.get('charVersion'))
         
-        #################
-        # Secret Resource
-
-        # Read manifest
-        document = open('k8s/secreto.yaml', 'r')
-        manifest = yaml.safe_load_all(document).__next__()
-
-        # Set secreat
-        manifest['spec']['parameters']['objects'] = '- objectName: "' + secret_rapyd.secret_name + '"\n  objectType: "secretsmanager"\n'
-
-        # Create Resorce
-        secret_r = cluster.add_manifest('customSecretR', manifest)
-        secret_r.node.add_dependency(aws_csi)
-
-        ############################
-        # Create Wallet Microservice
-
-        # Read manifest
-        document = open('k8s/wallet.yaml', 'r')
-        manifest = yaml.safe_load_all(document)
-
-        # Create Resorces
-        for i, doc in enumerate(manifest):
-            # Update container image
-            if doc['kind'] == "Deployment":
-                doc['spec']['template']['spec']['containers'][0]['image'] = p_wallet_image
-
-            resource = cluster.add_manifest('wallet' + doc['kind'] + 'R', doc)
-            resource.node.add_dependency(db_record)
-            resource.node.add_dependency(secret_r)
-
-            if doc['kind'] == "Service":
-                wallet_service = resource
-        
-        ##########################
-        # Create User Microservice
-
-        # Read manifest
-        document = open('k8s/user.yaml', 'r')
-        manifest = yaml.safe_load_all(document)
-
-        # Create Resorces
-        for i, doc in enumerate(manifest):
-            # Update container image
-            if doc['kind'] == "Deployment":
-                doc['spec']['template']['spec']['containers'][0]['image'] = p_user_image
-
-            resource = cluster.add_manifest('user' + doc['kind'] + 'R', doc)
-            resource.node.add_dependency(db_record)
-            resource.node.add_dependency(secret_r)
-
-            if doc['kind'] == "Service":
-                user_service = resource
-
-        ##########################
-        # Create Bot Microservice
-
-        # Read manifest
-        document = open('k8s/bot.yaml', 'r')
-        manifest = yaml.safe_load_all(document)
-
-        # Create Resorces
-        for i, doc in enumerate(manifest):
-            # Update container image
-            if doc['kind'] == "Deployment":
-                doc['spec']['template']['spec']['containers'][0]['image'] = p_bot_image
-
-            # Update Service
-            if doc['kind'] == "Service":
-                doc['metadata']['annotations']['service.beta.kubernetes.io/aws-load-balancer-ssl-cert'] = p_cert_arn
-
-            resource = cluster.add_manifest('bot' + doc['kind'] + 'R', doc)
-            resource.node.add_dependency(wallet_service)
-            resource.node.add_dependency(user_service)
-
-            if doc['kind'] == "Service":
-                bot_service = resource
-
-        ###############################
-        # OutPuts
-        ###############################
-
-        bot_service_address = eks.KubernetesObjectValue(self, "botServiceLB",
-                                                        cluster=cluster,
-                                                        object_type="service",
-                                                        object_name="bot-service",
-                                                        json_path=".status.loadBalancer.ingress[0].hostname")
-
-        bot_service_address.node.add_dependency(bot_service)
-
-        core.CfnOutput(
-            self, "BOT_SERVICE_ENDPOINT",
-            value=bot_service_address.value)
-        
+        app_chart.node.add_dependency(dbCluster)
+        app_chart.node.add_dependency(aws_csi)
