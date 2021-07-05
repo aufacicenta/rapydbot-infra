@@ -144,3 +144,20 @@ class InfraStack(cdk.Stack):
         
         app_chart.node.add_dependency(dbCluster)
         app_chart.node.add_dependency(aws_csi)
+
+        ###############################
+        # OutPuts
+        ###############################
+
+        bot_service_address = eks.KubernetesObjectValue(self, "botServiceLB",
+                                                        cluster=cluster,
+                                                        object_type="service",
+                                                        object_name="my-bot-bot-service",
+                                                        json_path=".status.loadBalancer.ingress[0].hostname")
+
+        bot_service_address.node.add_dependency(app_chart)
+
+        core.CfnOutput(
+            self, "BOT_SERVICE_ENDPOINT",
+            value=bot_service_address.value)
+        
