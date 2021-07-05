@@ -22,63 +22,63 @@ class InfraStack(cdk.Stack):
             document = open('values.yaml', 'r')
             parms = yaml.safe_load_all(document).__next__()
         except:
-            print("Parameter file is required! Error:", sys.exc_info()[0])
+            print('Parameter file is required! Error:', sys.exc_info()[0])
             os._exit(1)
 
         p_secret_arn = parms.get('secretsManager').get('arn')
         if p_secret_arn == None:
-            print("Secrets ARN is required in parameter file! Error:", sys.exc_info()[0])
+            print('Secrets ARN is required in parameter file! Error:', sys.exc_info()[0])
             os._exit(1)
 
         ####################
         # VPC
         ####################
 
-        vpc = ec2.Vpc(self, "vpc",
+        vpc = ec2.Vpc(self, 'vpc',
                       max_azs=2,
-                      nat_gateway_provider=ec2.NatProvider.instance(instance_type=ec2.InstanceType("t3a.micro")))
+                      nat_gateway_provider=ec2.NatProvider.instance(instance_type=ec2.InstanceType('t3a.micro')))
 
         ####################
         # Kubernetes Cluster
         ####################
 
         # EKS Cluster
-        cluster = eks.Cluster(self, "rapyd-eks",
+        cluster = eks.Cluster(self, 'rapyd-eks',
             version=eks.KubernetesVersion.V1_20,
-            cluster_name="rapyd-cluster",
+            cluster_name='rapyd-cluster',
             default_capacity=2,
             default_capacity_instance=ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3_AMD, ec2.InstanceSize.MEDIUM),
             vpc=vpc
         )
 
         # Add admin user for EKS
-        cluster.aws_auth.add_user_mapping(iam.User.from_user_name(self, "adminUser", "poguz"), groups=["system:masters"])
+        cluster.aws_auth.add_user_mapping(iam.User.from_user_name(self, 'adminUser', 'poguz'), groups=['system:masters'])
 
         # Add service account
-        sa = cluster.add_service_account('rapyd-secret-sa', name="rapyd-secret-sa")
+        sa = cluster.add_service_account('rapyd-secret-sa', name='rapyd-secret-sa')
 
         sa.add_to_principal_policy(iam.PolicyStatement(effect=iam.Effect.ALLOW,
-                                    actions=["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+                                    actions=['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
                                     resources=[p_secret_arn]))
 
         # CSI Chart
-        csi_chart = cluster.add_helm_chart("csi-secrets-store",
-                                            release="csi-secrets-store",
-                                            chart="secrets-store-csi-driver",
+        csi_chart = cluster.add_helm_chart('csi-secrets-store',
+                                            release='csi-secrets-store',
+                                            chart='secrets-store-csi-driver',
                                             values={
-                                                "syncSecret.enabled": True
+                                                'syncSecret.enabled': True
                                             },
-                                            repository="https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/master/charts",
-                                            namespace="kube-system")
+                                            repository='https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/master/charts',
+                                            namespace='kube-system')
 
         # Installing the AWS Provider
-        manifest = yaml.safe_load_all(requests.get("https://raw.githubusercontent.com/aws/secrets-store-csi-driver-provider-aws/main/deployment/aws-provider-installer.yaml").text)
+        manifest = yaml.safe_load_all(requests.get('https://raw.githubusercontent.com/aws/secrets-store-csi-driver-provider-aws/main/deployment/aws-provider-installer.yaml').text)
         for i, doc in enumerate(manifest):
-            resource = cluster.add_manifest("ascpResource" + str(i), doc)
+            resource = cluster.add_manifest('ascpResource' + str(i), doc)
             resource.node.add_dependency(csi_chart)
             resource.node.add_dependency(sa)
 
-            if doc['kind'] == "DaemonSet":
+            if doc['kind'] == 'DaemonSet':
                 aws_csi = resource
         
         ####################
@@ -86,22 +86,22 @@ class InfraStack(cdk.Stack):
         ####################
         
         # Read Secret
-        secret_rapyd = sm.Secret.from_secret_arn(self, "dbCreds", p_secret_arn)
+        secret_rapyd = sm.Secret.from_secret_arn(self, 'dbCreds', p_secret_arn)
 
         # DB Security group
-        sg_aurora = ec2.SecurityGroup(self, 'sgAurora', vpc=vpc, security_group_name= "AuroraMysql")
+        sg_aurora = ec2.SecurityGroup(self, 'sgAurora', vpc=vpc, security_group_name= 'AuroraMysql')
         sg_aurora.add_ingress_rule(cluster.cluster_security_group, ec2.Port.tcp(3306))
 
         # Create cluster
-        dbCluster = rds.DatabaseCluster(self, "database",
+        dbCluster = rds.DatabaseCluster(self, 'database',
                                         engine=rds.DatabaseClusterEngine.aurora_mysql(version=rds.AuroraMysqlEngineVersion.VER_2_09_2),
                                         credentials=rds.Credentials.from_secret(secret_rapyd),
-                                        cluster_identifier="db-cluster",
+                                        cluster_identifier='db-cluster',
                                         instances=1,
                                         instance_props=rds.InstanceProps(
                                             vpc=vpc,
                                             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE),
-                                            instance_type=ec2.InstanceType("t3.small"),
+                                            instance_type=ec2.InstanceType('t3.small'),
                                             security_groups=[sg_aurora]
                                         ))
 
@@ -112,7 +112,7 @@ class InfraStack(cdk.Stack):
         # Create dns zone
         zone_pv = route53.PrivateHostedZone(self, 'zonaPrivada',
                                             vpc=vpc,
-                                            zone_name="rapydbot.local")
+                                            zone_name='rapydbot.local')
 
         # DB Write Record
         db_record = route53.CnameRecord(self, 'dbWriteRecord',
@@ -135,11 +135,11 @@ class InfraStack(cdk.Stack):
         if parms.get('secretsManager').get('secretName') == None:
             parms['secretsManager']['secretName'] = secret_rapyd.secret_name
 
-        app_chart = cluster.add_helm_chart("rapydbot-chart",
-                                            release="my-bot",
-                                            chart="rapydbot",
+        app_chart = cluster.add_helm_chart('rapydbot-chart',
+                                            release='my-bot',
+                                            chart='rapydbot',
                                             values=parms,
-                                            repository="https://aufacicenta.github.io/rapydbot-chart/",
+                                            repository='https://aufacicenta.github.io/rapydbot-chart/',
                                             version=None if parms.get('charVersion') == None else parms.get('charVersion'))
         
         app_chart.node.add_dependency(dbCluster)
@@ -149,15 +149,15 @@ class InfraStack(cdk.Stack):
         # OutPuts
         ###############################
 
-        bot_service_address = eks.KubernetesObjectValue(self, "botServiceLB",
+        bot_service_address = eks.KubernetesObjectValue(self, 'botServiceLB',
                                                         cluster=cluster,
-                                                        object_type="service",
-                                                        object_name="my-bot-bot-service",
-                                                        json_path=".status.loadBalancer.ingress[0].hostname")
+                                                        object_type='service',
+                                                        object_name='my-bot-bot-service',
+                                                        json_path='.status.loadBalancer.ingress[0].hostname')
 
         bot_service_address.node.add_dependency(app_chart)
 
         core.CfnOutput(
-            self, "BOT_SERVICE_ENDPOINT",
+            self, 'BOT_SERVICE_ENDPOINT',
             value=bot_service_address.value)
         
