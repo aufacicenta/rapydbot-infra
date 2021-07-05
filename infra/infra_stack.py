@@ -30,6 +30,15 @@ class InfraStack(cdk.Stack):
             print('Secrets ARN is required in parameter file! Error:', sys.exc_info()[0])
             os._exit(1)
 
+        p_namespace = 'default' if parms.get('namespace') == None else parms.get('namespace')
+
+        p_workers_type = 't3a.medium'
+        p_workers_number = 2
+
+        if parms.get('workers') != None:
+            p_workers_type = parms.get('workers').get('instanceType')
+            p_workers_number = parms.get('workers').get('number')
+
         ####################
         # VPC
         ####################
@@ -45,29 +54,38 @@ class InfraStack(cdk.Stack):
         # EKS Cluster
         cluster = eks.Cluster(self, 'rapyd-eks',
             version=eks.KubernetesVersion.V1_20,
-            cluster_name='rapyd-cluster',
-            default_capacity=2,
-            default_capacity_instance=ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3_AMD, ec2.InstanceSize.MEDIUM),
+            cluster_name='rapyd-eks',
+            default_capacity=p_workers_number,
+            default_capacity_instance=ec2.InstanceType(p_workers_type),
             vpc=vpc
         )
 
-        # Add admin user for EKS
-        cluster.aws_auth.add_user_mapping(iam.User.from_user_name(self, 'adminUser', 'poguz'), groups=['system:masters'])
+        # Namespace Creation
+        if p_namespace != None:
+            doc = {
+                "apiVersion": "v1",
+                "kind": "Namespace",
+                "metadata" : {
+                    "name": p_namespace
+                }        
+            }
+
+            namespace_r = cluster.add_manifest('namespaceR', doc)
 
         # Add service account
-        sa = cluster.add_service_account('rapyd-secret-sa', name='rapyd-secret-sa')
+        sa = cluster.add_service_account('rapydSecretSA', name='rapyd-secret-sa', namespace=p_namespace)
 
         sa.add_to_principal_policy(iam.PolicyStatement(effect=iam.Effect.ALLOW,
                                     actions=['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
                                     resources=[p_secret_arn]))
 
+        if p_namespace != None:
+            sa.node.add_dependency(namespace_r)
+
         # CSI Chart
-        csi_chart = cluster.add_helm_chart('csi-secrets-store',
+        csi_chart = cluster.add_helm_chart('csiSecretsStoreChart',
                                             release='csi-secrets-store',
                                             chart='secrets-store-csi-driver',
-                                            values={
-                                                'syncSecret.enabled': True
-                                            },
                                             repository='https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/master/charts',
                                             namespace='kube-system')
 
@@ -86,7 +104,7 @@ class InfraStack(cdk.Stack):
         ####################
         
         # Read Secret
-        secret_rapyd = sm.Secret.from_secret_arn(self, 'dbCreds', p_secret_arn)
+        secret_rapyd = sm.Secret.from_secret_arn(self, 'secretsRapydbot', p_secret_arn)
 
         # DB Security group
         sg_aurora = ec2.SecurityGroup(self, 'sgAurora', vpc=vpc, security_group_name= 'AuroraMysql')
@@ -110,7 +128,7 @@ class InfraStack(cdk.Stack):
         ####################
 
         # Create dns zone
-        zone_pv = route53.PrivateHostedZone(self, 'zonaPrivada',
+        zone_pv = route53.PrivateHostedZone(self, 'privateZone',
                                             vpc=vpc,
                                             zone_name='rapydbot.local')
 
@@ -135,12 +153,13 @@ class InfraStack(cdk.Stack):
         if parms.get('secretsManager').get('secretName') == None:
             parms['secretsManager']['secretName'] = secret_rapyd.secret_name
 
-        app_chart = cluster.add_helm_chart('rapydbot-chart',
+        app_chart = cluster.add_helm_chart('rapydbotChart',
                                             release='my-bot',
                                             chart='rapydbot',
                                             values=parms,
                                             repository='https://aufacicenta.github.io/rapydbot-chart/',
-                                            version=None if parms.get('charVersion') == None else parms.get('charVersion'))
+                                            version=None if parms.get('charVersion') == None else parms.get('charVersion'),
+                                            namespace=p_namespace)
         
         app_chart.node.add_dependency(dbCluster)
         app_chart.node.add_dependency(aws_csi)
@@ -153,7 +172,8 @@ class InfraStack(cdk.Stack):
                                                         cluster=cluster,
                                                         object_type='service',
                                                         object_name='my-bot-bot-service',
-                                                        json_path='.status.loadBalancer.ingress[0].hostname')
+                                                        json_path='.status.loadBalancer.ingress[0].hostname', 
+                                                        object_namespace=p_namespace)
 
         bot_service_address.node.add_dependency(app_chart)
 
