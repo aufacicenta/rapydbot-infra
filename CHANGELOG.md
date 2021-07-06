@@ -1,3 +1,17 @@
+# [0.4.0](https://github.com/aufacicenta/rapydbot-infra/compare/v0.3.0...v0.4.0) (2021-07-06)
+
+
+### Bug Fixes
+
+* remove cdk.context.json ([63be8a9](https://github.com/aufacicenta/rapydbot-infra/commit/63be8a94422c04afce608f0849ff2f4f9bd1b4d3))
+
+
+### Features
+
+* Print Bot Endpoint at the end of the infra creation ([2d3545b](https://github.com/aufacicenta/rapydbot-infra/commit/2d3545b026d556762041a2a3a652d306f2146a6f))
+
+
+
 # [0.3.0](https://github.com/aufacicenta/rapydbot-infra/compare/v0.2.1...v0.3.0) (2021-07-01)
 
 
