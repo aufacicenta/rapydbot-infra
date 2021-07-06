@@ -60,6 +60,9 @@ class InfraStack(cdk.Stack):
             vpc=vpc
         )
 
+        # Allow to use Cloudwatch
+        cluster.role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchAgentServerPolicy"))
+
         # Namespace Creation
         if p_namespace != 'default':
             doc = {
@@ -79,6 +82,9 @@ class InfraStack(cdk.Stack):
                                     actions=['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
                                     resources=[p_secret_arn]))
 
+        # Allow to use Cloudwatch
+        sa.role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchAgentServerPolicy"))
+        
         if p_namespace != 'default':
             sa.node.add_dependency(namespace_r)
 
