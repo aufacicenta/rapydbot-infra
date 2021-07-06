@@ -5,6 +5,8 @@ __pycache__
 .env
 .venv
 *.egg-info
+values.yaml
+cdk.context.json
 
 # CDK asset staging directory
 .cdk.staging
