@@ -1,3 +1,12 @@
+## [0.4.1](https://github.com/aufacicenta/rapydbot-infra/compare/v0.4.0...v0.4.1) (2021-07-06)
+
+
+### Bug Fixes
+
+* namespace creation ([7fa7a0c](https://github.com/aufacicenta/rapydbot-infra/commit/7fa7a0c50168567f7d764f51fb21e739eb57f84c))
+
+
+
 # [0.4.0](https://github.com/aufacicenta/rapydbot-infra/compare/v0.3.0...v0.4.0) (2021-07-06)
 
 
@@ -40,15 +49,6 @@
 ### Features
 
 * add service loadbalancer for bot webhook ([c4fc757](https://github.com/aufacicenta/rapydbot-infra/commit/c4fc7577a96ff6cadb46c44afc40009994fc90c2))
-
-
-
-# [0.1.0](https://github.com/aufacicenta/rapydbot-infra/compare/3ca9256f681ac73fc278e2224c76784662e953d7...v0.1.0) (2021-06-30)
-
-
-### Bug Fixes
-
-* update workflow ([3ca9256](https://github.com/aufacicenta/rapydbot-infra/commit/3ca9256f681ac73fc278e2224c76784662e953d7))
 
 
 
