@@ -61,7 +61,7 @@ class InfraStack(cdk.Stack):
         )
 
         # Namespace Creation
-        if p_namespace != None:
+        if p_namespace != 'default':
             doc = {
                 "apiVersion": "v1",
                 "kind": "Namespace",
@@ -79,7 +79,7 @@ class InfraStack(cdk.Stack):
                                     actions=['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
                                     resources=[p_secret_arn]))
 
-        if p_namespace != None:
+        if p_namespace != 'default':
             sa.node.add_dependency(namespace_r)
 
         # CSI Chart
