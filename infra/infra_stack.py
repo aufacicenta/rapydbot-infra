@@ -61,7 +61,7 @@ class InfraStack(cdk.Stack):
         )
 
         # Allow to use Cloudwatch
-        cluster.role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchAgentServerPolicy"))
+        cluster.default_nodegroup.role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchAgentServerPolicy"))
 
         # Namespace Creation
         if p_namespace != 'default':
@@ -164,7 +164,7 @@ class InfraStack(cdk.Stack):
                                             chart='rapydbot',
                                             values=parms,
                                             repository='https://aufacicenta.github.io/rapydbot-chart/',
-                                            version=None if parms.get('charVersion') == None else parms.get('charVersion'),
+                                            version=None if parms.get('chartVersion') == None else parms.get('chartVersion'),
                                             namespace=p_namespace)
         
         app_chart.node.add_dependency(dbCluster)
