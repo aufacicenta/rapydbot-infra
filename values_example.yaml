@@ -1,0 +1,30 @@
+# Values for rapydbot.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+#chartVersion: 0.1.2
+#env: test
+#namespace: my-namespace
+
+#workers:
+#  instanceType: t3a.medium
+#  number: 2
+
+secretsManager:
+  arn: <your-secret-arn>
+
+#rapyd:
+#  saltLength: 8
+#  baseUrl: "https://sandboxapi.rapyd.net"
+#
+#wallet:
+#  image: "public.ecr.aws/l0y7w6p3/rapydbot/wallet:latest"
+#  db_name: "WALLET"
+#
+#user:
+#  image: "public.ecr.aws/l0y7w6p3/rapydbot/user:latest"
+#  db_name: "USER"
+#
+#bot:
+#  certArn: <your-arn-acm-certificate>
+#  image: "public.ecr.aws/l0y7w6p3/rapydbot/bot:latest"
