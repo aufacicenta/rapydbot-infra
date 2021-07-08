@@ -1,3 +1,7 @@
+## [0.4.3](https://github.com/aufacicenta/rapydbot-infra/compare/v0.4.2...v0.4.3) (2021-07-08)
+
+
+
 ## [0.4.2](https://github.com/aufacicenta/rapydbot-infra/compare/v0.4.1...v0.4.2) (2021-07-07)
 
 
@@ -36,10 +40,6 @@
 ### Features
 
 * new params: containers images and cert ARN ([8e05c27](https://github.com/aufacicenta/rapydbot-infra/commit/8e05c2747ce9c55fe1c51afed267dea635891210))
-
-
-
-## [0.2.1](https://github.com/aufacicenta/rapydbot-infra/compare/v0.2.0...v0.2.1) (2021-07-01)
 
 
 
